@@ -17,7 +17,9 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 import javax.xml.bind.JAXBElement;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
@@ -37,6 +39,9 @@ import org.mapstruct.ap.test.builtin.bean.CalendarProperty;
 import org.mapstruct.ap.test.builtin.bean.DateProperty;
 import org.mapstruct.ap.test.builtin.bean.JaxbElementListProperty;
 import org.mapstruct.ap.test.builtin.bean.JaxbElementProperty;
+import org.mapstruct.ap.test.builtin.bean.OptionalListProperty;
+import org.mapstruct.ap.test.builtin.bean.OptionalProperty;
+import org.mapstruct.ap.test.builtin.bean.OtherOptionalProperty;
 import org.mapstruct.ap.test.builtin.bean.SomeType;
 import org.mapstruct.ap.test.builtin.bean.SomeTypeProperty;
 import org.mapstruct.ap.test.builtin.bean.StringListProperty;
@@ -54,6 +59,8 @@ import org.mapstruct.ap.test.builtin.mapper.IterableSourceTargetMapper;
 import org.mapstruct.ap.test.builtin.mapper.JaxbListMapper;
 import org.mapstruct.ap.test.builtin.mapper.JaxbMapper;
 import org.mapstruct.ap.test.builtin.mapper.MapSourceTargetMapper;
+import org.mapstruct.ap.test.builtin.mapper.OptionalListMapper;
+import org.mapstruct.ap.test.builtin.mapper.OptionalMapper;
 import org.mapstruct.ap.test.builtin.mapper.StringToCalendarMapper;
 import org.mapstruct.ap.test.builtin.mapper.StringToXmlGregCalMapper;
 import org.mapstruct.ap.test.builtin.mapper.XmlGregCalToCalendarMapper;
@@ -79,6 +86,9 @@ import static org.assertj.core.api.Assertions.assertThat;
     DateProperty.class,
     JaxbElementListProperty.class,
     JaxbElementProperty.class,
+    OptionalProperty.class,
+    OptionalListProperty.class,
+    OtherOptionalProperty.class,
     StringListProperty.class,
     StringProperty.class,
     BigDecimalProperty.class,
@@ -146,7 +156,6 @@ public class BuiltInTest {
     @WithClasses( JaxbListMapper.class )
     @IssueKey( "141" )
     public void shouldApplyBuiltInOnJAXBElementList() {
-
         JaxbElementListProperty source = new JaxbElementListProperty();
         source.setProp( createJaxbList( "TEST2" ) );
         source.publicProp = createJaxbList( "PUBLIC TEST2" );
@@ -155,6 +164,96 @@ public class BuiltInTest {
         assertThat( target ).isNotNull();
         assertThat( target.getProp().get( 0 ) ).isEqualTo( "TEST2" );
         assertThat( target.publicProp.get( 0 ) ).isEqualTo( "PUBLIC TEST2" );
+    }
+
+    @Test
+    @WithClasses( OptionalMapper.class )
+    public void shouldApplyBuiltInOnValueToOptionalElement() {
+        StringProperty source = new StringProperty();
+        source.publicProp = "PUBLIC TEST";
+        source.setProp( "TEST" );
+
+        OptionalProperty target = OptionalMapper.INSTANCE.map( source );
+        assertThat( target ).isNotNull();
+        assertThat( target.getProp() ).isEqualTo( Optional.of( "TEST" ) );
+        assertThat( target.publicProp ).isEqualTo( Optional.of( "PUBLIC TEST" ) );
+
+        OptionalProperty source2 = new OptionalProperty();
+        source2.publicProp = createOptional( null );
+        source2.setProp( createOptional( null ) );
+
+        StringProperty target2 = OptionalMapper.INSTANCE.mapString( source2 );
+        assertThat( target2 ).isNotNull();
+        assertThat( target2.getProp() ).isNull();
+        assertThat( target2.publicProp ).isNull();
+    }
+
+    @Test
+    @WithClasses( OptionalMapper.class )
+    public void shouldNotApplyBuiltInOnOptionalToOptional() {
+        OptionalProperty source = new OptionalProperty();
+        source.publicProp = Optional.of( "PUBLIC TEST" );
+        source.setProp( Optional.of( "TEST" ) );
+
+        OtherOptionalProperty target = OptionalMapper.INSTANCE.map( source );
+        assertThat( target ).isNotNull();
+        assertThat( target.getProp() ).isEqualTo( Optional.of( "TEST" ) );
+        assertThat( target.publicProp ).isEqualTo( Optional.of( "PUBLIC TEST" ) );
+
+        OptionalProperty source2 = new OptionalProperty();
+        source2.publicProp = createOptional( null );
+        source2.setProp( createOptional( null ) );
+
+        OtherOptionalProperty target2 = OptionalMapper.INSTANCE.map( source2 );
+        assertThat( target2 ).isNotNull();
+        assertThat( target2.getProp() ).isEqualTo( Optional.empty() );
+        assertThat( target2.publicProp ).isEqualTo( Optional.empty() );
+    }
+
+    @Test
+    @WithClasses( OptionalMapper.class )
+    public void shouldApplyBuiltInOnOptionalElement() {
+        OptionalProperty source = new OptionalProperty();
+        source.publicProp = createOptional( "PUBLIC TEST" );
+        source.setProp( createOptional( "TEST" ) );
+
+        StringProperty target = OptionalMapper.INSTANCE.mapString( source );
+        assertThat( target ).isNotNull();
+        assertThat( target.getProp() ).isEqualTo( "TEST" );
+        assertThat( target.publicProp ).isEqualTo( "PUBLIC TEST" );
+
+        OptionalProperty source2 = new OptionalProperty();
+        source2.publicProp = createOptional( null );
+        source2.setProp( createOptional( null ) );
+
+        StringProperty target2 = OptionalMapper.INSTANCE.mapString( source2 );
+        assertThat( target2 ).isNotNull();
+        assertThat( target2.getProp() ).isNull();
+        assertThat( target2.publicProp ).isNull();
+    }
+
+    @Test
+    @WithClasses( OptionalListMapper.class )
+    public void shouldApplyBuiltInOnOptionalList() {
+        OptionalListProperty source = new OptionalListProperty();
+        source.setProp( createOptionalList( "TEST2" ) );
+        source.publicProp = createOptionalList( "PUBLIC TEST2" );
+
+        StringListProperty target = OptionalListMapper.INSTANCE.mapString( source );
+        assertThat( target ).isNotNull();
+        assertThat( target.getProp().get( 0 ) ).isEqualTo( "TEST2" );
+        assertThat( target.publicProp.get( 0 ) ).isEqualTo( "PUBLIC TEST2" );
+
+        OptionalListProperty source2 = new OptionalListProperty();
+        source2.setProp( createOptionalList( "TEST", null ) );
+        source2.publicProp = createOptionalList( "TEST", null );
+
+        StringListProperty target2 = OptionalListMapper.INSTANCE.mapString( source2 );
+        assertThat( target2 ).isNotNull();
+        assertThat( target2.getProp().get( 0 ) ).isEqualTo( "TEST" );
+        assertThat( target2.getProp().get( 1 ) ).isNull();
+        assertThat( target2.publicProp.get( 0 ) ).isEqualTo( "TEST" );
+        assertThat( target2.publicProp.get( 1 ) ).isNull();
     }
 
     @Test
@@ -424,6 +523,16 @@ public class BuiltInTest {
         List<JAXBElement<String>> result = new ArrayList<>();
         result.add( createJaxb( test ) );
         return result;
+    }
+
+    private Optional<String> createOptional(String test) {
+        return Optional.ofNullable( test );
+    }
+
+    private List<Optional<String>> createOptionalList(String...test) {
+        return Arrays.stream( test )
+                .map( this::createOptional )
+                .collect( Collectors.toList() );
     }
 
     private Date createDate(String date) throws ParseException {

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.mapstruct.ap.internal.model.common.TypeFactory;
+import org.mapstruct.ap.internal.util.JavaOptionalConstants;
 import org.mapstruct.ap.internal.util.JaxbConstants;
 import org.mapstruct.ap.internal.util.JodaTimeConstants;
 import org.mapstruct.ap.internal.util.XmlConstants;
@@ -24,7 +25,7 @@ public class BuiltInMappingMethods {
 
     public BuiltInMappingMethods(TypeFactory typeFactory) {
         boolean isXmlGregorianCalendarPresent = isXmlGregorianCalendarAvailable( typeFactory );
-        builtInMethods = new ArrayList<>( 20 );
+        builtInMethods = new ArrayList<>( 24 );
         if ( isXmlGregorianCalendarPresent ) {
             builtInMethods.add( new DateToXmlGregorianCalendar( typeFactory ) );
             builtInMethods.add( new XmlGregorianCalendarToDate( typeFactory ) );
@@ -41,6 +42,11 @@ public class BuiltInMappingMethods {
 
         if ( isJaxbAvailable( typeFactory ) ) {
             builtInMethods.add( new JaxbElemToValue( typeFactory ) );
+        }
+
+        if ( isJavaOptionalAvailable( typeFactory ) ) {
+            builtInMethods.add( new JavaOptionalToValue( typeFactory ) );
+            builtInMethods.add( new ValueToJavaOptional( typeFactory ) );
         }
 
         builtInMethods.add( new ZonedDateTimeToCalendar( typeFactory ) );
@@ -60,6 +66,11 @@ public class BuiltInMappingMethods {
 
     private static boolean isJaxbAvailable(TypeFactory typeFactory) {
         return JaxbConstants.isJaxbElementPresent() && typeFactory.isTypeAvailable( JaxbConstants.JAXB_ELEMENT_FQN );
+    }
+
+    private static boolean isJavaOptionalAvailable(TypeFactory typeFactory) {
+        return JavaOptionalConstants.isJavaOptionalPresent() &&
+                typeFactory.isTypeAvailable( JavaOptionalConstants.JAVA_OPTIONAL_FQN );
     }
 
     private static boolean isXmlGregorianCalendarAvailable(TypeFactory typeFactory) {
